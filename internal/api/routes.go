@@ -31,6 +31,20 @@ func (a *Api) BindRoutes() {
 
 				})
 			})
+
+			r.Route("/pessoa-juridica", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(a.AuthMiddleware)
+					r.Post("/", a.handleCriarContaPessoaJuridica)
+					r.Route("/{conta_id}", func(r chi.Router) {
+						r.Get("/", a.handlerGetContaPessoaJuridicaPorId)
+						r.Patch("/saldo", a.handlerPatchSaldoContaPessoaJuridicaPorId)
+						r.Put("/", a.handlerUpdateContaPessoaJuridicaPorId)
+						r.Delete("/", a.handlerDeleteContaPessoaJuridicaPorId)
+					})
+
+				})
+			})
 		})
 	})
 }
