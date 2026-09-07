@@ -3,6 +3,9 @@ module gobank
 go 1.26.1
 
 require (
+	github.com/alexedwards/scs/v2 v2.9.0
+	github.com/go-chi/chi v1.5.5
+	github.com/go-chi/chi/v5 v5.3.2
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
