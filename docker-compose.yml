@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: gobank_db
+    environment:
+      POSTGRES_USER: ${GOBANK_DATABASE_USER}
+      POSTGRES_PASSWORD: ${GOBANK_DATABASE_PASSWORD}
+      POSTGRES_DB: ${GOBANK_DATABASE_NAME}
+    ports:
+      - "${GOBANK_DATABASE_PORT}:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+
+volumes:
+  db:
+    driver: local
