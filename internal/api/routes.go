@@ -18,6 +18,19 @@ func (a *Api) BindRoutes() {
 					r.Post("/logout", a.handlerLogoutUser)
 				})
 			})
+			r.Route("/pessoa-fisica", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(a.AuthMiddleware)
+					r.Post("/", a.handleCriarContaPessoaFisica)
+					r.Route("/{conta_id}", func(r chi.Router) {
+						r.Get("/", a.handlerGetContaPessoaFisicaPorId)
+						r.Patch("/saldo", a.handlerPatchSaldoContaPessoaFisicaPorId)
+						r.Put("/", a.handlerUpdateContaPessoaFisicaPorId)
+						r.Delete("/", a.handlerDeleteContaPessoaFisicaPorId)
+					})
+
+				})
+			})
 		})
 	})
 }
