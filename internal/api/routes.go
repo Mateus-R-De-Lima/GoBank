@@ -6,7 +6,7 @@ import (
 )
 
 func (a *Api) BindRoutes() {
-	a.Router.Use(middleware.RequestID, middleware.Recoverer, middleware.Logger)
+	a.Router.Use(middleware.RequestID, middleware.Recoverer, middleware.Logger, a.Sessions.LoadAndSave)
 
 	a.Router.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {

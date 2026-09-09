@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/gob"
 	"fmt"
 	"gobank/internal/api"
 	"gobank/internal/services/user"
@@ -12,12 +13,13 @@ import (
 	"github.com/alexedwards/scs/pgxstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-
+	gob.Register(uuid.UUID{})
 	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}

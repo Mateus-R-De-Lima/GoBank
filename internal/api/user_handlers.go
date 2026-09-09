@@ -46,6 +46,7 @@ func (a *Api) handleLoginUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		utils.CodificarJson(w, r, http.StatusUnprocessableEntity, problemas)
+		return
 	}
 
 	id, err := a.UserService.AuthenticarUsuario(r.Context(), data.Email, data.Password)
@@ -76,9 +77,11 @@ func (a *Api) handleLoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Sessions.Put(r.Context(), "AuthenticatedUserId", id)
+
 	utils.CodificarJson(w, r, http.StatusOK, map[string]any{
 		"mensagem": "login realizado com sucesso",
 	})
+
 }
 func (a *Api) handlerLogoutUser(w http.ResponseWriter, r *http.Request) {
 	err := a.Sessions.RenewToken(r.Context())
