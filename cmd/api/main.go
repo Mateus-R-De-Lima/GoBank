@@ -1,7 +1,64 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"gobank/internal/api"
+	"gobank/internal/services/user"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/alexedwards/scs/pgxstore"
+	"github.com/alexedwards/scs/v2"
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
+)
 
 func main() {
-	fmt.Println("Ola")
+
+	if err := godotenv.Load(); err != nil {
+		panic(err)
+	}
+
+	ctx := context.Background()
+
+	pool, err := pgxpool.New(ctx, fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s sslmode=disable",
+		os.Getenv("GOBANK_DATABASE_USER"),
+		os.Getenv("GOBANK_DATABASE_PASSWORD"),
+		os.Getenv("GOBANK_DATABASE_HOST"),
+		os.Getenv("GOBANK_DATABASE_PORT"),
+		os.Getenv("GOBANK_DATABASE_NAME")))
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer pool.Close()
+
+	if err := pool.Ping(ctx); err != nil {
+		panic(err)
+	}
+
+	s := scs.New()
+	s.Store = pgxstore.New(pool)
+	s.Lifetime = 24 * time.Hour
+	s.Cookie.HttpOnly = true
+	s.Cookie.SameSite = http.SameSiteLaxMode
+
+	api := api.Api{
+		Router:      chi.NewMux(),
+		UserService: user.NovoUserServices(pool),
+		Sessions:    s,
+	}
+
+	api.BindRoutes()
+
+	fmt.Printf("Servidor esta rodando na porta 8080")
+
+	if err := http.ListenAndServe(":8080", api.Router); err != nil {
+		panic(err)
+	}
+
 }
