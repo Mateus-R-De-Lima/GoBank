@@ -13,6 +13,7 @@ func (a *Api) handleSignupUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		_ = utils.CodificarJson(w, r, http.StatusUnprocessableEntity, problemas)
+		return
 	}
 
 	id, err := a.UserService.CriarUsuario(
@@ -25,7 +26,7 @@ func (a *Api) handleSignupUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, usuario.ErroEmailOuUserNameJaExiste) {
 			_ = utils.CodificarJson(w, r, http.StatusBadRequest, map[string]any{
-				"error": usuario.ErroEmailOuUserNameJaExiste,
+				"error": usuario.ErroEmailOuUserNameJaExiste.Error(),
 			})
 			return
 		}
@@ -52,7 +53,7 @@ func (a *Api) handleLoginUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, usuario.ErrorCredenciasInvalidas) {
 			utils.CodificarJson(w, r, http.StatusUnauthorized, map[string]any{
-				"error": usuario.ErrorCredenciasInvalidas,
+				"error": usuario.ErrorCredenciasInvalidas.Error(),
 			})
 			return
 		}
