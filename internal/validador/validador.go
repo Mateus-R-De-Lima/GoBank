@@ -50,3 +50,18 @@ func MinimoCaracteres(value string, n int) bool {
 func Corresponde(value string, rx *regexp.Regexp) bool {
 	return rx.MatchString(value)
 }
+
+func MaiorOuIgualLimite(value int32, limite int) bool {
+
+	return int(value) >= limite
+}
+
+func MaximoValor(value int32, max int) bool {
+
+	return int(value) <= max
+}
+
+func MaiorLimiteDecimal(value float64, limite float64) bool {
+
+	return float64(value) > limite
+}
