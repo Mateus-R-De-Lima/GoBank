@@ -100,9 +100,100 @@ func (a *Api) handlerGetContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Re
 	})
 }
 
-func (a *Api) handlerPatchSaldoContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request) {}
-func (a *Api) handlerUpdateContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request)     {}
-func (a *Api) handlerDeleteContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request)     {}
+func (a *Api) handlerPatchSaldoContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request) {
+	data, problemas, err := utils.DecodificarJson[pessoafisica.AtualizarSaldoPessoaFisicaRequest](r)
+	if err != nil {
+		_ = utils.CodificarJson(w, r, http.StatusUnprocessableEntity, problemas)
+		return
+	}
+
+	pessoaID, err := uuid.Parse(chi.URLParam(r, "conta_id"))
+	if err != nil {
+		writeErrorJSON(w, r, http.StatusBadRequest, "Pessoa Id inválido!")
+		return
+	}
+
+	response, err := a.PessoaFisicaService.AtualizarSaldoPessoaFisica(r.Context(), pessoaID, data.Saldo)
+	if err != nil {
+		if errors.Is(err, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado) {
+			writeErrorJSON(w, r, http.StatusNotFound, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado.Error())
+			return
+		}
+
+		writeErrorJSON(w, r, http.StatusInternalServerError, "Erro interno ao atualizar o saldo da pessoa física.")
+		return
+	}
+
+	_ = utils.CodificarJson(w, r, http.StatusOK, map[string]any{
+		"data": response,
+	})
+}
+
+func (a *Api) handlerUpdateContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request) {
+	data, problemas, err := utils.DecodificarJson[pessoafisica.AtualizarPessoaFisicaRequest](r)
+	if err != nil {
+		_ = utils.CodificarJson(w, r, http.StatusUnprocessableEntity, problemas)
+		return
+	}
+
+	pessoaID, err := uuid.Parse(chi.URLParam(r, "conta_id"))
+	if err != nil {
+		writeErrorJSON(w, r, http.StatusBadRequest, "Pessoa Id inválido!")
+		return
+	}
+
+	response, err := a.PessoaFisicaService.AtualizarPessoaFisica(
+		r.Context(),
+		pessoaID,
+		data.RendaMensal,
+		data.Idade,
+		data.NomeCompleto,
+		data.Celular,
+		data.Email,
+		data.Categoria,
+		data.Saldo,
+	)
+	if err != nil {
+		if errors.Is(err, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado) {
+			writeErrorJSON(w, r, http.StatusNotFound, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado.Error())
+			return
+		}
+
+		if errors.Is(err, pessoaFisicaService.ErroEmailJaExiste) {
+			writeErrorJSON(w, r, http.StatusBadRequest, pessoaFisicaService.ErroEmailJaExiste.Error())
+			return
+		}
+
+		writeErrorJSON(w, r, http.StatusInternalServerError, "Erro interno ao atualizar a pessoa física.")
+		return
+	}
+
+	_ = utils.CodificarJson(w, r, http.StatusOK, map[string]any{
+		"data": response,
+	})
+}
+
+func (a *Api) handlerDeleteContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request) {
+	pessoaID, err := uuid.Parse(chi.URLParam(r, "conta_id"))
+	if err != nil {
+		writeErrorJSON(w, r, http.StatusBadRequest, "Pessoa Id inválido!")
+		return
+	}
+
+	if err := a.PessoaFisicaService.ExcluirPessoaFisica(r.Context(), pessoaID); err != nil {
+		if errors.Is(err, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado) {
+			writeErrorJSON(w, r, http.StatusNotFound, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado.Error())
+			return
+		}
+
+		writeErrorJSON(w, r, http.StatusInternalServerError, "Erro interno ao excluir a pessoa física.")
+		return
+	}
+
+	_ = utils.CodificarJson(w, r, http.StatusOK, map[string]any{
+		"mensagem": "Pessoa física removida com sucesso!",
+	})
+}
 
 func (a *Api) authenticatedUserID(r *http.Request) (uuid.UUID, error) {
 	userIDValue := a.Sessions.Get(r.Context(), "AuthenticatedUserId")

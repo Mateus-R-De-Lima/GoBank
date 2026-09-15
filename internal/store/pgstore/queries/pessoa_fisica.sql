@@ -28,6 +28,11 @@ FROM pessoa_fisica
 WHERE id = $1
 LIMIT 1;
 
+-- name: GetPessoaFisicaByEmail :one
+SELECT *
+FROM pessoa_fisica
+WHERE email = $1
+LIMIT 1;
 
 -- name: ListPessoasFisicas :many
 SELECT *

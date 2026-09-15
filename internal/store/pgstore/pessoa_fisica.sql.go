@@ -106,6 +106,30 @@ func (q *Queries) GetPessoaFisica(ctx context.Context, id uuid.UUID) (PessoaFisi
 	return i, err
 }
 
+const getPessoaFisicaByEmail = `-- name: GetPessoaFisicaByEmail :one
+SELECT id, renda_mensal, idade, nome_completo, celular, email, categoria, saldo, user_id
+FROM pessoa_fisica
+WHERE email = $1
+LIMIT 1
+`
+
+func (q *Queries) GetPessoaFisicaByEmail(ctx context.Context, email string) (PessoaFisica, error) {
+	row := q.db.QueryRow(ctx, getPessoaFisicaByEmail, email)
+	var i PessoaFisica
+	err := row.Scan(
+		&i.ID,
+		&i.RendaMensal,
+		&i.Idade,
+		&i.NomeCompleto,
+		&i.Celular,
+		&i.Email,
+		&i.Categoria,
+		&i.Saldo,
+		&i.UserID,
+	)
+	return i, err
+}
+
 const getPessoaFisicaByUserId = `-- name: GetPessoaFisicaByUserId :many
 SELECT id, renda_mensal, idade, nome_completo, celular, email, categoria, saldo, user_id
 FROM pessoa_fisica
