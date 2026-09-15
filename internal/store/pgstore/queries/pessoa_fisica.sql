@@ -28,6 +28,11 @@ FROM pessoa_fisica
 WHERE id = $1
 LIMIT 1;
 
+-- name: GetPessoaFisicaByEmail :one
+SELECT *
+FROM pessoa_fisica
+WHERE email = $1
+LIMIT 1;
 
 -- name: ListPessoasFisicas :many
 SELECT *
@@ -63,3 +68,14 @@ DELETE FROM pessoa_fisica
 WHERE id = $1;
 
 
+-- name: GetPessoaFisicaByUserIdAndEmail :one
+SELECT *
+FROM pessoa_fisica
+WHERE user_id = $1 AND email = $2
+LIMIT 1;
+
+
+-- name: GetPessoaFisicaByUserId :many
+SELECT *
+FROM pessoa_fisica
+WHERE user_id = $1;

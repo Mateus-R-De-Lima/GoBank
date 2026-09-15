@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"gobank/internal/api"
+	pessoafisica "gobank/internal/services/pessoa_fisica"
 	"gobank/internal/services/user"
 	"net/http"
 	"os"
@@ -50,9 +51,10 @@ func main() {
 	s.Cookie.SameSite = http.SameSiteLaxMode
 
 	api := api.Api{
-		Router:      chi.NewMux(),
-		UserService: user.NovoUserServices(pool),
-		Sessions:    s,
+		Router:              chi.NewMux(),
+		UserService:         user.NovoUserServices(pool),
+		PessoaFisicaService: pessoafisica.NovaPessoaFisicaServices(pool),
+		Sessions:            s,
 	}
 
 	api.BindRoutes()
