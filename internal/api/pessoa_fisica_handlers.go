@@ -7,37 +7,26 @@ import (
 	"gobank/internal/utils"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 func (a *Api) handleCriarContaPessoaFisica(w http.ResponseWriter, r *http.Request) {
-
 	data, problemas, err := utils.DecodificarJson[pessoafisica.CriarPessoaFisicaRequest](r)
-
 	if err != nil {
 		_ = utils.CodificarJson(w, r, http.StatusUnprocessableEntity, problemas)
 		return
 	}
 
-	userID := a.Sessions.Get(r.Context(), "AuthenticatedUserId")
-
-	if userID == nil {
-		_ = utils.CodificarJson(w, r, http.StatusUnauthorized, map[string]any{
-			"error": "usuário não autenticado",
-		})
+	userID, err := a.authenticatedUserID(r)
+	if err != nil {
+		writeErrorJSON(w, r, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	id, ok := userID.(uuid.UUID)
-	if !ok {
-
-		_ = utils.CodificarJson(w, r, http.StatusUnauthorized, map[string]any{
-			"error": "id do usuário inválido",
-		})
-		return
-	}
-
-	novaPessoaFisicaId, err := a.PessoaFisicaService.CriarNovaPessoaFisica(r.Context(),
+	novaPessoaFisicaId, err := a.PessoaFisicaService.CriarNovaPessoaFisica(
+		r.Context(),
 		data.NomeCompleto,
 		data.Categoria,
 		data.Celular,
@@ -45,31 +34,92 @@ func (a *Api) handleCriarContaPessoaFisica(w http.ResponseWriter, r *http.Reques
 		data.Idade,
 		data.Saldo,
 		data.RendaMensal,
-		id,
+		userID,
 	)
-
 	if err != nil {
 		if errors.Is(err, pessoaFisicaService.ErroEmailJaExiste) {
-			utils.CodificarJson(w, r, http.StatusBadRequest, map[string]any{
-				"error": pessoaFisicaService.ErroEmailJaExiste.Error(),
-			})
+			writeErrorJSON(w, r, http.StatusBadRequest, pessoaFisicaService.ErroEmailJaExiste.Error())
 			return
 		}
 
-		_ = utils.CodificarJson(w, r, http.StatusInternalServerError, map[string]any{
-			"error": "Erro internal ao criar a pessoa fisica.",
-		})
+		writeErrorJSON(w, r, http.StatusInternalServerError, "Erro interno ao criar a pessoa física.")
 		return
-
 	}
 
-	utils.CodificarJson(w, r, http.StatusCreated, map[string]any{
+	_ = utils.CodificarJson(w, r, http.StatusCreated, map[string]any{
 		"id":       novaPessoaFisicaId,
-		"mensagem": "Pessoa fisica criada com sucesso!",
+		"mensagem": "Pessoa física criada com sucesso!",
 	})
-
 }
-func (a *Api) handlerGetContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request)        {}
+
+func (a *Api) handlerGetListaContaPessoaFisicaPorUserId(w http.ResponseWriter, r *http.Request) {
+	userID, err := a.authenticatedUserID(r)
+	if err != nil {
+		writeErrorJSON(w, r, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	listaPessoaFisica, err := a.PessoaFisicaService.BuscarPessoaFisicaByUserId(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado) {
+			writeErrorJSON(w, r, http.StatusNotFound, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado.Error())
+			return
+		}
+
+		writeErrorJSON(w, r, http.StatusInternalServerError, "Erro interno ao buscar a lista de pessoa física.")
+		return
+	}
+
+	_ = utils.CodificarJson(w, r, http.StatusOK, map[string]any{
+		"data": listaPessoaFisica,
+	})
+}
+
+func (a *Api) handlerGetContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request) {
+	pessoaIdParam := chi.URLParam(r, "conta_id")
+
+	pessoaId, err := uuid.Parse(pessoaIdParam)
+	if err != nil {
+		writeErrorJSON(w, r, http.StatusBadRequest, "Pessoa Id inválido!")
+		return
+	}
+
+	responseBuscaPessoaFisica, err := a.PessoaFisicaService.BuscarPessoaFisicaById(r.Context(), pessoaId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado) {
+			writeErrorJSON(w, r, http.StatusNotFound, pessoaFisicaService.ErrorPessoaFisicaNaoEncontrado.Error())
+			return
+		}
+
+		writeErrorJSON(w, r, http.StatusInternalServerError, "Erro interno ao buscar a pessoa física.")
+		return
+	}
+
+	_ = utils.CodificarJson(w, r, http.StatusOK, map[string]any{
+		"data": responseBuscaPessoaFisica,
+	})
+}
+
 func (a *Api) handlerPatchSaldoContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request) {}
 func (a *Api) handlerUpdateContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request)     {}
 func (a *Api) handlerDeleteContaPessoaFisicaPorId(w http.ResponseWriter, r *http.Request)     {}
+
+func (a *Api) authenticatedUserID(r *http.Request) (uuid.UUID, error) {
+	userIDValue := a.Sessions.Get(r.Context(), "AuthenticatedUserId")
+	if userIDValue == nil {
+		return uuid.Nil, errors.New("usuário não autenticado")
+	}
+
+	userID, ok := userIDValue.(uuid.UUID)
+	if !ok {
+		return uuid.Nil, errors.New("id do usuário inválido")
+	}
+
+	return userID, nil
+}
+
+func writeErrorJSON(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
+	_ = utils.CodificarJson(w, r, statusCode, map[string]any{
+		"error": message,
+	})
+}

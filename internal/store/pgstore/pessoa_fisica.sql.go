@@ -106,6 +106,71 @@ func (q *Queries) GetPessoaFisica(ctx context.Context, id uuid.UUID) (PessoaFisi
 	return i, err
 }
 
+const getPessoaFisicaByUserId = `-- name: GetPessoaFisicaByUserId :many
+SELECT id, renda_mensal, idade, nome_completo, celular, email, categoria, saldo, user_id
+FROM pessoa_fisica
+WHERE user_id = $1
+`
+
+func (q *Queries) GetPessoaFisicaByUserId(ctx context.Context, userID uuid.UUID) ([]PessoaFisica, error) {
+	rows, err := q.db.Query(ctx, getPessoaFisicaByUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PessoaFisica
+	for rows.Next() {
+		var i PessoaFisica
+		if err := rows.Scan(
+			&i.ID,
+			&i.RendaMensal,
+			&i.Idade,
+			&i.NomeCompleto,
+			&i.Celular,
+			&i.Email,
+			&i.Categoria,
+			&i.Saldo,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPessoaFisicaByUserIdAndEmail = `-- name: GetPessoaFisicaByUserIdAndEmail :one
+SELECT id, renda_mensal, idade, nome_completo, celular, email, categoria, saldo, user_id
+FROM pessoa_fisica
+WHERE user_id = $1 AND email = $2
+LIMIT 1
+`
+
+type GetPessoaFisicaByUserIdAndEmailParams struct {
+	UserID uuid.UUID `json:"user_id"`
+	Email  string    `json:"email"`
+}
+
+func (q *Queries) GetPessoaFisicaByUserIdAndEmail(ctx context.Context, arg GetPessoaFisicaByUserIdAndEmailParams) (PessoaFisica, error) {
+	row := q.db.QueryRow(ctx, getPessoaFisicaByUserIdAndEmail, arg.UserID, arg.Email)
+	var i PessoaFisica
+	err := row.Scan(
+		&i.ID,
+		&i.RendaMensal,
+		&i.Idade,
+		&i.NomeCompleto,
+		&i.Celular,
+		&i.Email,
+		&i.Categoria,
+		&i.Saldo,
+		&i.UserID,
+	)
+	return i, err
+}
+
 const listPessoasFisicas = `-- name: ListPessoasFisicas :many
 SELECT id, renda_mensal, idade, nome_completo, celular, email, categoria, saldo, user_id
 FROM pessoa_fisica
