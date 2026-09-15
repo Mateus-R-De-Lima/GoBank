@@ -29,12 +29,25 @@ WHERE id = $1
 LIMIT 1;
 
 
+-- name: GetPessoaJuridicaByEmail :one
+SELECT *
+FROM pessoa_juridica
+WHERE email_corporativo = $1
+LIMIT 1;
+
+
 -- name: GetPessoaJuridicaByUserID :one
 SELECT *
 FROM pessoa_juridica
 WHERE id = $1
   AND user_id = $2
 LIMIT 1;
+
+
+-- name: GetPessoaJuridicaByUserId :many
+SELECT *
+FROM pessoa_juridica
+WHERE user_id = $1;
 
 
 -- name: ListPessoasJuridicas :many
@@ -62,7 +75,8 @@ SET
     nome_fantasia = $4,
     celular = $5,
     email_corporativo = $6,
-    categoria = $7
+    categoria = $7,
+    saldo = $8
 WHERE id = $1
 RETURNING *;
 
@@ -92,4 +106,3 @@ RETURNING *;
 -- name: DeletePessoaJuridica :exec
 DELETE FROM pessoa_juridica
 WHERE id = $1;
-

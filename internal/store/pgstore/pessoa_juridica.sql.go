@@ -135,6 +135,30 @@ func (q *Queries) GetPessoaJuridica(ctx context.Context, id uuid.UUID) (PessoaJu
 	return i, err
 }
 
+const getPessoaJuridicaByEmail = `-- name: GetPessoaJuridicaByEmail :one
+SELECT id, faturamento, idade, nome_fantasia, celular, email_corporativo, categoria, saldo, user_id
+FROM pessoa_juridica
+WHERE email_corporativo = $1
+LIMIT 1
+`
+
+func (q *Queries) GetPessoaJuridicaByEmail(ctx context.Context, emailCorporativo string) (PessoaJuridica, error) {
+	row := q.db.QueryRow(ctx, getPessoaJuridicaByEmail, emailCorporativo)
+	var i PessoaJuridica
+	err := row.Scan(
+		&i.ID,
+		&i.Faturamento,
+		&i.Idade,
+		&i.NomeFantasia,
+		&i.Celular,
+		&i.EmailCorporativo,
+		&i.Categoria,
+		&i.Saldo,
+		&i.UserID,
+	)
+	return i, err
+}
+
 const getPessoaJuridicaByUserID = `-- name: GetPessoaJuridicaByUserID :one
 SELECT id, faturamento, idade, nome_fantasia, celular, email_corporativo, categoria, saldo, user_id
 FROM pessoa_juridica
@@ -163,6 +187,42 @@ func (q *Queries) GetPessoaJuridicaByUserID(ctx context.Context, arg GetPessoaJu
 		&i.UserID,
 	)
 	return i, err
+}
+
+const getPessoaJuridicaByUserId = `-- name: GetPessoaJuridicaByUserId :many
+SELECT id, faturamento, idade, nome_fantasia, celular, email_corporativo, categoria, saldo, user_id
+FROM pessoa_juridica
+WHERE user_id = $1
+`
+
+func (q *Queries) GetPessoaJuridicaByUserId(ctx context.Context, userID uuid.UUID) ([]PessoaJuridica, error) {
+	rows, err := q.db.Query(ctx, getPessoaJuridicaByUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PessoaJuridica
+	for rows.Next() {
+		var i PessoaJuridica
+		if err := rows.Scan(
+			&i.ID,
+			&i.Faturamento,
+			&i.Idade,
+			&i.NomeFantasia,
+			&i.Celular,
+			&i.EmailCorporativo,
+			&i.Categoria,
+			&i.Saldo,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPessoasJuridicas = `-- name: ListPessoasJuridicas :many
@@ -291,7 +351,8 @@ SET
     nome_fantasia = $4,
     celular = $5,
     email_corporativo = $6,
-    categoria = $7
+    categoria = $7,
+    saldo = $8
 WHERE id = $1
 RETURNING id, faturamento, idade, nome_fantasia, celular, email_corporativo, categoria, saldo, user_id
 `
@@ -304,6 +365,7 @@ type UpdatePessoaJuridicaParams struct {
 	Celular          string    `json:"celular"`
 	EmailCorporativo string    `json:"email_corporativo"`
 	Categoria        string    `json:"categoria"`
+	Saldo            float64   `json:"saldo"`
 }
 
 func (q *Queries) UpdatePessoaJuridica(ctx context.Context, arg UpdatePessoaJuridicaParams) (PessoaJuridica, error) {
@@ -315,6 +377,7 @@ func (q *Queries) UpdatePessoaJuridica(ctx context.Context, arg UpdatePessoaJuri
 		arg.Celular,
 		arg.EmailCorporativo,
 		arg.Categoria,
+		arg.Saldo,
 	)
 	var i PessoaJuridica
 	err := row.Scan(
