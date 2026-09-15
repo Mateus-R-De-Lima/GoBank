@@ -37,6 +37,7 @@ func (a *Api) BindRoutes() {
 				r.Group(func(r chi.Router) {
 					r.Use(a.AuthMiddleware)
 					r.Post("/", a.handleCriarContaPessoaJuridica)
+					r.Get("/", a.handlerGetListaContaPessoaJuridicaPorUserId)
 					r.Route("/{conta_id}", func(r chi.Router) {
 						r.Get("/", a.handlerGetContaPessoaJuridicaPorId)
 						r.Patch("/saldo", a.handlerPatchSaldoContaPessoaJuridicaPorId)
